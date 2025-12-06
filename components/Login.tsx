@@ -165,7 +165,7 @@ export const Login: React.FC = () => {
                       setError(''); 
                     }}
                     placeholder="e.g. CLASS-101"
-                    className="w-full px-5 py-3.5 pl-11 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary focus:outline-none transition-all placeholder:text-slate-400 text-base uppercase"
+                    className="w-full px-5 py-3.5 pl-11 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary focus:outline-none transition-all placeholder:text-slate-400 text-base"
                   />
                   <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 </div>
