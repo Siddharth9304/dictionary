@@ -44,8 +44,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return false;
   };
 
-  const register = async (username: string, fullName: string, password?: string): Promise<boolean> => {
-    const user = await storage.registerUser(username, fullName, password);
+  const register = async (username: string, fullName: string, password?: string, classCode?: string): Promise<boolean> => {
+    const user = await storage.registerUser(username, fullName, password, classCode);
     if (user) {
       setUser(user);
       storage.setSessionUserId(user.id);

@@ -53,9 +53,9 @@ export const loginUser = async (username: string, password?: string): Promise<Us
     }
 };
 
-export const registerUser = async (username: string, name: string, password?: string): Promise<User | null> => {
+export const registerUser = async (username: string, name: string, password?: string, classCode?: string): Promise<User | null> => {
     try {
-        const res = await api.post('/auth/register', { username, name, password });
+        const res = await api.post('/auth/register', { username, name, password, classCode });
         return res.data;
     } catch (error) {
         console.error("Register failed", error);
