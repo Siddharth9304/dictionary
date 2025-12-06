@@ -28,7 +28,7 @@ export const Sidebar: React.FC = () => {
                 <BookOpen size={24} />
             </div>
             <div>
-                <h1 className="text-lg font-bold text-slate-900 font-serif leading-none">BOCC 46</h1>
+                <h1 className="text-lg font-bold text-slate-900 font-serif leading-none">Vocab App</h1>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">CommHub</p>
             </div>
         </div>

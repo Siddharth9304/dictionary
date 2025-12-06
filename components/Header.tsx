@@ -24,7 +24,7 @@ export const Header: React.FC = () => {
                 <BookOpen size={24} strokeWidth={2} />
               </div>
               <div className="hidden sm:block">
-                <h1 className="text-xl font-bold text-slate-900 font-serif leading-none tracking-tight">BOCC 46</h1>
+                <h1 className="text-xl font-bold text-slate-900 font-serif leading-none tracking-tight">Vocab App</h1>
                 <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">Communication Hub</p>
               </div>
             </Link>

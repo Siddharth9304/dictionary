@@ -64,9 +64,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
        // logic to create default collections could happen here or backend
        // For this setup, we'll assume user creates them or we call API sequentially
        const defaults: { name: string; type: CollectionType }[] = [
-        { name: 'Known words', type: 'word' },
-        { name: 'Aware', type: 'general' },
-        { name: 'New', type: 'general' }
+        { name: 'My words', type: 'word' },
+        { name: 'My Idioms', type: 'idiom' },
+        { name: 'My Thoughts', type: 'thought' },
+        { name: 'All', type: 'general' }
       ];
       // Note: This might trigger multiple API calls in quick succession
       defaults.forEach(async (d) => {
