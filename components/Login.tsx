@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { BookOpen, ArrowRight, UserPlus, LogIn, AlertCircle, Lock, User, UserCircle, Hash } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  // Assuming register is updated in your context: register(username, fullName, password, classCode)
   const { login, register } = useAuth();
   
   const [mode, setMode] = useState<'login' | 'register'>('register');
@@ -24,10 +23,7 @@ export const Login: React.FC = () => {
     // --- 1. Client-Side Validation ---
 
     // Username Validation
-    if (/\s/.test(username)) {
-      setError('Username cannot contain spaces.');
-      return;
-    }
+    // Note: Spaces check removed here because we prevent them in the input onChange
     if (username.length < 3) {
       setError('Username must be at least 3 characters long.');
       return;
@@ -35,19 +31,16 @@ export const Login: React.FC = () => {
 
     // Registration Specific Validation
     if (mode === 'register') {
-      // Full Name Validation
       if (fullName.trim().length < 3) {
         setError('Full Name must be at least 3 characters long.');
         return;
       }
 
-      // Password Strength Validation
       if (password.length < 6) {
         setError('Password is too weak. It must be at least 6 characters long.');
         return;
       }
       
-      // Class Code Validation
       if (!classCode.trim()) {
         setError('Please enter your Class Code to register.');
         return;
@@ -55,35 +48,26 @@ export const Login: React.FC = () => {
     }
 
     // --- 2. Submission & API Handling ---
-
     setIsSubmitting(true);
 
     try {
-      // Simulate network delay for better UX
       await new Promise(resolve => setTimeout(resolve, 600));
 
       let success = false;
 
       if (mode === 'login') {
-        // We await here to handle async API calls correctly
         success = await login(username, password);
-        
         if (!success) {
           throw new Error('Invalid credentials. Please check your username and password.');
         }
       } else {
-        // Pass classCode to register function
         success = await register(username, fullName, password, classCode);
-        
         if (!success) {
           throw new Error('Registration failed. This username might already be taken.');
         }
       }
     } catch (err: any) {
-      // --- 3. API Error Handling ---
       console.error("Authentication Error:", err);
-      
-      // If the API returns a specific error message, use it. Otherwise, fallback.
       const errorMessage = err.message || 'An unexpected error occurred. Please try again later.';
       setError(errorMessage);
       setIsSubmitting(false);
@@ -94,7 +78,6 @@ export const Login: React.FC = () => {
     setMode(newMode);
     setError('');
     setPassword('');
-    // Clear registration specific fields
     if (newMode === 'login') {
       setFullName('');
       setClassCode('');
@@ -147,7 +130,6 @@ export const Login: React.FC = () => {
           
           {mode === 'register' && (
             <div className="animate-in fade-in slide-in-from-top-4 duration-300 space-y-4">
-              {/* Full Name Input */}
               <div className="space-y-2">
                 <label htmlFor="fullName" className="block text-sm font-bold text-slate-700 ml-1">
                   Full Name
@@ -166,7 +148,6 @@ export const Login: React.FC = () => {
                 </div>
               </div>
 
-              {/* Class Code Input */}
               <div className="space-y-2">
                 <label htmlFor="classCode" className="block text-sm font-bold text-slate-700 ml-1">
                   Class Code
@@ -187,7 +168,7 @@ export const Login: React.FC = () => {
             </div>
           )}
 
-          {/* Username Input */}
+          {/* Username Input - UPDATED */}
           <div className="space-y-2">
             <label htmlFor="username" className="block text-sm font-bold text-slate-700 ml-1">
               Username
@@ -197,9 +178,15 @@ export const Login: React.FC = () => {
                 type="text"
                 id="username"
                 required
+                autoCapitalize="none" // Prevents mobile from capitalizing first letter
                 value={username}
-                onChange={(e) => { setUsername(e.target.value); setError(''); }}
-                placeholder={mode === 'login' ? "Enter username" : "No spaces allowed (min 3 chars)"}
+                onChange={(e) => { 
+                  // Force lowercase and remove any spaces immediately
+                  const sanitizedValue = e.target.value.toLowerCase().replace(/\s/g, '');
+                  setUsername(sanitizedValue); 
+                  setError(''); 
+                }}
+                placeholder={mode === 'login' ? "Enter username" : "lowercase, no spaces (min 3)"}
                 className={`w-full px-5 py-3.5 pl-11 rounded-xl bg-slate-50 border focus:bg-white focus:ring-4 focus:outline-none transition-all placeholder:text-slate-400 text-base ${
                   error && (error.includes('Username') || error.includes('taken'))
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10' 
@@ -210,7 +197,6 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          {/* Password Input */}
           <div className="space-y-2">
             <label htmlFor="password" className="block text-sm font-bold text-slate-700 ml-1">
               Password
@@ -233,7 +219,6 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          {/* Error Message Display */}
           {error && (
             <div className="flex items-start gap-2 text-red-600 text-xs font-medium ml-1 animate-in slide-in-from-top-1 bg-red-50 p-3 rounded-lg border border-red-100">
               <AlertCircle size={14} className="mt-0.5 shrink-0" />
@@ -257,7 +242,6 @@ export const Login: React.FC = () => {
           </button>
         </form>
 
-        {/* Decorative background blob */}
         <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
         <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
       </div>
