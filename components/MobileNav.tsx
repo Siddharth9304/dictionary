@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { BookOpen, BarChart2, Book, PlusCircle, User } from 'lucide-react';
+import { BookOpen, BarChart2, Book, PlusCircle, User, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const MobileNav: React.FC = () => {
@@ -21,27 +22,27 @@ export const MobileNav: React.FC = () => {
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 z-50 pb-safe">
       <nav className="flex justify-around items-center h-16 px-2">
          <NavLink to="/" className={getLinkClass}>
-            <BookOpen size={22} strokeWidth={2} />
+            <BookOpen size={20} strokeWidth={2} />
             <span className={tooltipClass}>Feed</span>
          </NavLink>
 
          <NavLink to="/my-dictionary" className={getLinkClass}>
-            <Book size={22} strokeWidth={2} />
-            <span className={tooltipClass}>My Dictionary</span>
+            <Book size={20} strokeWidth={2} />
+            <span className={tooltipClass}>Library</span>
          </NavLink>
          
          <NavLink to="/add" className="group relative flex items-center justify-center w-12 h-12 bg-slate-900 text-white rounded-full shadow-lg shadow-slate-900/20 -mt-6 border-4 border-slate-50 hover:scale-105 transition-transform">
             <PlusCircle size={24} />
-            <span className={tooltipClass}>Add Entry</span>
+            <span className={tooltipClass}>Add</span>
          </NavLink>
 
-         <NavLink to="/stats" className={getLinkClass}>
-            <BarChart2 size={22} strokeWidth={2} />
-            <span className={tooltipClass}>Stats</span>
+         <NavLink to="/dictionary" className={getLinkClass}>
+            <Search size={20} strokeWidth={2} />
+            <span className={tooltipClass}>Search</span>
          </NavLink>
          
          <NavLink to="/profile" className={getLinkClass}>
-            <User size={22} strokeWidth={2} />
+            <User size={20} strokeWidth={2} />
             <span className={tooltipClass}>Profile</span>
          </NavLink>
       </nav>

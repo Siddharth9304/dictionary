@@ -9,7 +9,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
-}
+} 
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

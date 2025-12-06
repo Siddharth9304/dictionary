@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Entry } from '../types';
 import { Quote, BookOpen, MessageCircle, Lock, Bookmark, Heart } from 'lucide-react';
@@ -26,11 +25,10 @@ export const EntryCard: React.FC<EntryCardProps> = ({
   const { savedEntries, toggleLike, collections, users } = useApp();
   const [showSaveDialog, setShowSaveDialog] = useState(false);
 
-  // Check if saved in ANY collection EXCEPT "Liked Posts"
+  // Check if saved
   const isSaved = user ? savedEntries.some(s => {
     if (s.userId !== user.id || s.entryId !== entry.id) return false;
     const collection = collections.find(c => c.id === s.collectionId);
-    // Return true only if it's in a collection AND that collection is NOT "Liked Posts"
     return collection && collection.name !== 'Liked Posts';
   }) : false;
   
@@ -56,11 +54,18 @@ export const EntryCard: React.FC<EntryCardProps> = ({
     return `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
   };
 
-  // If no sections are selected, show all (fallback)
-  const isAllHidden = !showVocab && !showIdiom && !showThought;
-  const renderVocab = showVocab || isAllHidden;
-  const renderIdiom = showIdiom || isAllHidden;
-  const renderThought = showThought || isAllHidden;
+  // Determine what data actually exists
+  const hasVocab = entry.vocabulary.word.trim().length > 0;
+  const hasIdiom = entry.idiom.phrase.trim().length > 0;
+  const hasThought = entry.thought.thought.trim().length > 0;
+
+  // Determine what to render based on toggles + existence
+  // If no toggles are active, show everything that exists (fallback)
+  const isAllTogglesOff = !showVocab && !showIdiom && !showThought;
+
+  const renderVocab = hasVocab && (showVocab || isAllTogglesOff);
+  const renderIdiom = hasIdiom && (showIdiom || isAllTogglesOff);
+  const renderThought = hasThought && (showThought || isAllTogglesOff);
 
   const handleSaveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -72,48 +77,55 @@ export const EntryCard: React.FC<EntryCardProps> = ({
     toggleLike(entry.id);
   };
 
+  if (!renderVocab && !renderIdiom && !renderThought) {
+     return null; 
+  }
+
   return (
     <>
       <div 
         onClick={onClick}
-        className="group relative bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] border border-slate-100 hover:border-indigo-100/50 transition-all duration-300 cursor-pointer break-inside-avoid mb-6 hover:-translate-y-1"
+        /* UPDATED: Added h-full, removed mb-6 and break-inside-avoid */
+        className="group relative bg-white rounded-2xl p-4 sm:p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] border border-slate-100 hover:border-indigo-100/50 transition-all duration-300 cursor-pointer hover:-translate-y-1 active:scale-[0.99] active:shadow-sm h-full"
       >
         {/* Header */}
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold flex items-center justify-center">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 text-slate-500 text-[10px] sm:text-xs font-bold flex items-center justify-center shrink-0">
                   {getInitials(entry.studentName)}
               </div>
-              <span className="text-xs font-semibold text-slate-500 truncate max-w-[100px]">{entry.studentName}</span>
-          </div>
-          <div className="flex items-center gap-2">
-              {entry.visibility === 'private' && (
-                  <Lock size={12} className="text-slate-400" />
-              )}
-              <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-full uppercase tracking-wide">
+              <div className="flex flex-col">
+                 <span className="text-xs font-bold text-slate-700 truncate max-w-[100px] sm:max-w-[120px]">{entry.studentName}</span>
+                 <span className="text-[10px] text-slate-400 font-medium">
                   {formatDate(entry.date)}
-              </span>
+                 </span>
+              </div>
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2">
+              {entry.visibility === 'private' && (
+                  <div className="bg-slate-50 p-1.5 rounded-full" title="Private">
+                     <Lock size={12} className="text-slate-400" />
+                  </div>
+              )}
               
-              {/* Like Button */}
               {user && (
                  <button 
                   onClick={handleLikeClick}
-                  className={`p-1.5 flex items-center gap-1 rounded-full transition-all group/like relative ${isLiked ? 'text-rose-500 bg-rose-50' : 'text-slate-300 hover:text-rose-500 hover:bg-slate-50'}`}
+                  className={`p-1.5 sm:p-2 flex items-center gap-1 rounded-full transition-all group/like relative ${isLiked ? 'text-rose-500 bg-rose-50' : 'text-slate-300 hover:text-rose-500 hover:bg-slate-50'}`}
                   title={likeTooltip}
                 >
-                  <Heart size={14} fill={isLiked ? "currentColor" : "none"} className={isLiked ? "animate-in zoom-in" : ""} />
+                  <Heart size={16} fill={isLiked ? "currentColor" : "none"} className={isLiked ? "animate-in zoom-in" : ""} />
                   {likeCount > 0 && <span className="text-[10px] font-bold">{likeCount}</span>}
                 </button>
               )}
 
-              {/* Save Button */}
               {user && (
                 <button 
                   onClick={handleSaveClick}
-                  className={`p-1.5 rounded-full transition-colors ${isSaved ? 'text-indigo-600 bg-indigo-50' : 'text-slate-300 hover:text-indigo-500 hover:bg-slate-50'}`}
+                  className={`p-1.5 sm:p-2 rounded-full transition-colors ${isSaved ? 'text-indigo-600 bg-indigo-50' : 'text-slate-300 hover:text-indigo-500 hover:bg-slate-50'}`}
                   title={isSaved ? "Saved to collection" : "Save to collection"}
                 >
-                  <Bookmark size={14} fill={isSaved ? "currentColor" : "none"} />
+                  <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} />
                 </button>
               )}
           </div>
@@ -129,12 +141,11 @@ export const EntryCard: React.FC<EntryCardProps> = ({
                         <BookOpen size={12} />
                         <span className="text-[10px] font-bold uppercase tracking-wider">Word</span>
                     </div>
-                    {/* Compact Voice Player for quick pronunciation */}
                     <div className="scale-75 origin-right" onClick={(e) => e.stopPropagation()}>
                         <VoicePlayer text={entry.vocabulary.word} label=" " />
                     </div>
                 </div>
-                <h3 className="text-xl font-serif font-bold text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-lg sm:text-xl font-serif font-bold text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors break-words">
                     {entry.vocabulary.word}
                 </h3>
               </div>
@@ -160,14 +171,13 @@ export const EntryCard: React.FC<EntryCardProps> = ({
                   <Quote size={12} />
                   <span className="text-[10px] font-bold uppercase tracking-wider">Thought</span>
               </div>
-              <p className="text-sm font-serif text-slate-600 line-clamp-2 leading-relaxed">
+              <p className="text-sm font-serif text-slate-600 line-clamp-3 leading-relaxed">
                   {entry.thought.thought}
               </p>
               </div>
           )}
         </div>
         
-        {/* Hover visual cue */}
         <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-indigo-500 via-emerald-500 to-amber-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-b-2xl opacity-80" />
       </div>
 

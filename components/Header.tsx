@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, PlusCircle, BarChart2, Book, LogOut } from 'lucide-react';
+import { BookOpen, PlusCircle, BarChart2, Book, LogOut, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Header: React.FC = () => {
@@ -42,6 +43,13 @@ export const Header: React.FC = () => {
               className={`px-4 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 hidden sm:inline-flex items-center gap-2 ${isActive('/my-dictionary')}`}
             >
               <Book size={18} strokeWidth={2} /> My Dictionary
+            </Link>
+
+            <Link 
+              to="/dictionary" 
+              className={`px-4 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 hidden sm:inline-flex items-center gap-2 ${isActive('/dictionary')}`}
+            >
+              <Search size={18} strokeWidth={2} /> Dictionary
             </Link>
 
             <Link 

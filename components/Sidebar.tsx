@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { BookOpen, BarChart2, Book, PlusCircle, LogOut, User } from 'lucide-react';
+import { BookOpen, BarChart2, Book, PlusCircle, LogOut, User, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Sidebar: React.FC = () => {
@@ -41,6 +41,10 @@ export const Sidebar: React.FC = () => {
             <NavLink to="/my-dictionary" className={getLinkClass}>
                 <Book size={20} />
                 <span>My Dictionary</span>
+            </NavLink>
+            <NavLink to="/dictionary" className={getLinkClass}>
+                <Search size={20} />
+                <span>Dictionary</span>
             </NavLink>
             <NavLink to="/stats" className={getLinkClass}>
                 <BarChart2 size={20} />

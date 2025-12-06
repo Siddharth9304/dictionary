@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Entry } from '../types';
 import { Quote, BookOpen, MessageCircle, X, Trash2, Calendar, User, Bookmark, Pencil, Heart } from 'lucide-react';
@@ -21,7 +20,7 @@ export const EntryModal: React.FC<EntryModalProps> = ({ entry, onClose }) => {
   
   const isOwner = user?.id === entry.userId;
   
-  // Check if saved in ANY collection EXCEPT "Liked Posts"
+  // Check if saved
   const isSaved = user ? savedEntries.some(s => {
     if (s.userId !== user.id || s.entryId !== entry.id) return false;
     const collection = collections.find(c => c.id === s.collectionId);
@@ -33,10 +32,13 @@ export const EntryModal: React.FC<EntryModalProps> = ({ entry, onClose }) => {
   const isLiked = user ? likes.includes(user.id) : false;
   const likeCount = likes.length;
 
-  // Resolve liked users
   const likedByUsers = users.filter(u => likes.includes(u.id));
 
-  // Prevent background scrolling when modal is open
+  // Determine what data exists
+  const hasVocab = entry.vocabulary.word.trim().length > 0;
+  const hasIdiom = entry.idiom.phrase.trim().length > 0;
+  const hasThought = entry.thought.thought.trim().length > 0;
+
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
@@ -67,22 +69,23 @@ export const EntryModal: React.FC<EntryModalProps> = ({ entry, onClose }) => {
 
   return (
     <>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6">
         <div 
           className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
           onClick={onClose}
         ></div>
         
-        <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 border border-slate-200">
+        {/* Modal Container: Full width on mobile (bottom sheet style), centered on desktop */}
+        <div className="relative bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-200 border border-slate-200">
           
           {/* Modal Header */}
-          <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-100 p-4 sm:p-6 flex items-start justify-between">
+          <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-slate-100 p-4 sm:p-6 flex items-start justify-between">
               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
                       <User size={20} />
                   </div>
-                  <div>
-                      <h3 className="font-bold text-slate-900">{entry.studentName}</h3>
+                  <div className="min-w-0">
+                      <h3 className="font-bold text-slate-900 truncate">{entry.studentName}</h3>
                       <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
                           <Calendar size={12} />
                           {formatDate(entry.date)}
@@ -90,14 +93,14 @@ export const EntryModal: React.FC<EntryModalProps> = ({ entry, onClose }) => {
                   </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                   <button 
                       onClick={() => toggleLike(entry.id)}
                       className={`p-2 flex items-center gap-1.5 rounded-full transition-colors ${isLiked ? 'text-rose-500 bg-rose-50' : 'text-slate-400 hover:text-rose-500 hover:bg-slate-100'}`}
                       title={isLiked ? "Unlike" : "Like"}
                   >
                       <Heart size={20} fill={isLiked ? "currentColor" : "none"} className={isLiked ? "animate-in zoom-in" : ""} />
-                      {likeCount > 0 && <span className="text-xs font-bold">{likeCount}</span>}
+                      {likeCount > 0 && <span className="text-xs font-bold hidden sm:inline">{likeCount}</span>}
                   </button>
 
                   <button 
@@ -112,14 +115,14 @@ export const EntryModal: React.FC<EntryModalProps> = ({ entry, onClose }) => {
                       <>
                         <button 
                             onClick={handleEdit}
-                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors hidden sm:block"
                             title="Edit Entry"
                         >
                             <Pencil size={20} />
                         </button>
                         <button 
                             onClick={handleDelete}
-                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors hidden sm:block"
                             title="Delete Entry"
                         >
                             <Trash2 size={20} />
@@ -136,82 +139,106 @@ export const EntryModal: React.FC<EntryModalProps> = ({ entry, onClose }) => {
           </div>
 
           {/* Modal Content */}
-          <div className="p-6 sm:p-8 space-y-10">
+          <div className="p-5 sm:p-8 space-y-8 sm:space-y-10 pb-20 sm:pb-8">
             
             {/* Vocab Section */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2 text-indigo-600">
-                      <BookOpen size={20} />
-                      <span className="text-sm font-bold uppercase tracking-wider">Vocabulary</span>
+            {hasVocab && (
+                <section>
+                  <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2 text-indigo-600">
+                          <BookOpen size={20} />
+                          <span className="text-sm font-bold uppercase tracking-wider">Vocabulary</span>
+                      </div>
+                      <VoicePlayer text={entry.vocabulary.word} />
                   </div>
-                  <VoicePlayer text={entry.vocabulary.word} />
-              </div>
-              
-              <h2 className="text-4xl font-serif font-bold text-slate-900 mb-3">{entry.vocabulary.word}</h2>
-              <p className="text-lg text-slate-700 leading-relaxed mb-4">{entry.vocabulary.meaning}</p>
-              
-              <div className="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100/50 mb-6">
-                  <p className="text-indigo-900/80 italic font-serif text-lg">"{entry.vocabulary.example}"</p>
-              </div>
+                  
+                  <h2 className="text-3xl sm:text-4xl font-serif font-bold text-slate-900 mb-3 break-words leading-tight">{entry.vocabulary.word}</h2>
+                  <p className="text-base sm:text-lg text-slate-700 leading-relaxed mb-4">{entry.vocabulary.meaning}</p>
+                  
+                  <div className="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100/50 mb-6">
+                      <p className="text-indigo-900/80 italic font-serif text-lg">"{entry.vocabulary.example}"</p>
+                  </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-slate-50 rounded-xl p-4">
-                      <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Synonyms</span>
-                      <div className="flex flex-wrap gap-2">
-                          {entry.vocabulary.synonyms.map(s => (
-                              <span key={s} className="px-2 py-1 bg-white border border-slate-200 text-slate-600 text-sm rounded-md font-medium">{s}</span>
-                          ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-slate-50 rounded-xl p-4">
+                          <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Synonyms</span>
+                          <div className="flex flex-wrap gap-2">
+                              {entry.vocabulary.synonyms.length > 0 ? entry.vocabulary.synonyms.map(s => (
+                                  <span key={s} className="px-2 py-1 bg-white border border-slate-200 text-slate-600 text-xs sm:text-sm rounded-md font-medium">{s}</span>
+                              )) : <span className="text-slate-400 text-sm italic">None listed</span>}
+                          </div>
+                      </div>
+                      <div className="bg-slate-50 rounded-xl p-4">
+                          <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Antonyms</span>
+                          <div className="flex flex-wrap gap-2">
+                              {entry.vocabulary.antonyms.length > 0 ? entry.vocabulary.antonyms.map(a => (
+                                  <span key={a} className="px-2 py-1 bg-white border border-slate-200 text-slate-600 text-xs sm:text-sm rounded-md font-medium">{a}</span>
+                              )) : <span className="text-slate-400 text-sm italic">None listed</span>}
+                          </div>
                       </div>
                   </div>
-                  <div className="bg-slate-50 rounded-xl p-4">
-                      <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Antonyms</span>
-                      <div className="flex flex-wrap gap-2">
-                          {entry.vocabulary.antonyms.map(a => (
-                              <span key={a} className="px-2 py-1 bg-white border border-slate-200 text-slate-600 text-sm rounded-md font-medium">{a}</span>
-                          ))}
-                      </div>
-                  </div>
-              </div>
-            </section>
+                </section>
+            )}
 
-            <div className="h-px bg-slate-100 w-full"></div>
+            {hasVocab && (hasIdiom || hasThought) && <div className="h-px bg-slate-100 w-full"></div>}
 
             {/* Idiom Section */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2 text-emerald-600">
-                      <MessageCircle size={20} />
-                      <span className="text-sm font-bold uppercase tracking-wider">Idiom</span>
+            {hasIdiom && (
+                <section>
+                  <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2 text-emerald-600">
+                          <MessageCircle size={20} />
+                          <span className="text-sm font-bold uppercase tracking-wider">Idiom</span>
+                      </div>
+                      <VoicePlayer text={entry.idiom.phrase} label="Listen" />
                   </div>
-                  <VoicePlayer text={entry.idiom.phrase} label="Listen" />
-              </div>
-              
-              <h3 className="text-2xl font-bold text-slate-800 mb-2">"{entry.idiom.phrase}"</h3>
-              <p className="text-slate-700 mb-4">{entry.idiom.meaning}</p>
-              
-              <div className="bg-emerald-50/50 rounded-xl p-5 border border-emerald-100/50">
-                  <p className="text-emerald-900/80 italic font-serif">"{entry.idiom.example}"</p>
-              </div>
-            </section>
+                  
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-800 mb-2 break-words">"{entry.idiom.phrase}"</h3>
+                  <p className="text-slate-700 mb-4">{entry.idiom.meaning}</p>
+                  
+                  <div className="bg-emerald-50/50 rounded-xl p-5 border border-emerald-100/50">
+                      <p className="text-emerald-900/80 italic font-serif">"{entry.idiom.example}"</p>
+                  </div>
+                </section>
+            )}
 
-            <div className="h-px bg-slate-100 w-full"></div>
+            {(hasVocab || hasIdiom) && hasThought && <div className="h-px bg-slate-100 w-full"></div>}
 
             {/* Thought Section */}
-            <section>
-              <div className="flex items-center gap-2 text-amber-600 mb-4">
-                  <Quote size={20} />
-                  <span className="text-sm font-bold uppercase tracking-wider">Thought</span>
-              </div>
-              
-              <blockquote className="text-2xl font-serif italic text-slate-800 leading-relaxed border-l-4 border-amber-300 pl-6 py-2 mb-4">
-                  "{entry.thought.thought}"
-              </blockquote>
-              <p className="text-slate-600 pl-6">
-                  <span className="font-semibold text-slate-900">Context: </span>
-                  {entry.thought.meaning}
-              </p>
-            </section>
+            {hasThought && (
+                <section>
+                  <div className="flex items-center gap-2 text-amber-600 mb-4">
+                      <Quote size={20} />
+                      <span className="text-sm font-bold uppercase tracking-wider">Thought</span>
+                  </div>
+                  
+                  <blockquote className="text-xl sm:text-2xl font-serif italic text-slate-800 leading-relaxed border-l-4 border-amber-300 pl-6 py-2 mb-4">
+                      "{entry.thought.thought}"
+                  </blockquote>
+                  <p className="text-slate-600 pl-6">
+                      <span className="font-semibold text-slate-900">Context: </span>
+                      {entry.thought.meaning}
+                  </p>
+                </section>
+            )}
+
+            {/* Mobile Only: Edit/Delete Actions at bottom */}
+            {isOwner && (
+                <div className="flex sm:hidden gap-3 pt-4 border-t border-slate-100">
+                     <button 
+                        onClick={handleEdit}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl"
+                    >
+                        <Pencil size={18} /> Edit
+                    </button>
+                    <button 
+                        onClick={handleDelete}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-50 text-red-700 font-bold rounded-xl"
+                    >
+                        <Trash2 size={18} /> Delete
+                    </button>
+                </div>
+            )}
 
             {/* Liked By Section */}
             {likedByUsers.length > 0 && (

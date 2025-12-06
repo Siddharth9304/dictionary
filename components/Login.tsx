@@ -1,37 +1,92 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, ArrowRight, UserPlus, LogIn, AlertCircle, Lock, User, UserCircle } from 'lucide-react';
+import { BookOpen, ArrowRight, UserPlus, LogIn, AlertCircle, Lock, User, UserCircle, Hash } from 'lucide-react';
 
 export const Login: React.FC = () => {
+  // Assuming register is updated in your context: register(username, fullName, password, classCode)
   const { login, register } = useAuth();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  
+  const [mode, setMode] = useState<'login' | 'register'>('register');
+  
+  // Form States
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [classCode, setClassCode] = useState('');
+  
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // --- 1. Client-Side Validation ---
+
+    // Username Validation
+    if (/\s/.test(username)) {
+      setError('Username cannot contain spaces.');
+      return;
+    }
+    if (username.length < 3) {
+      setError('Username must be at least 3 characters long.');
+      return;
+    }
+
+    // Registration Specific Validation
+    if (mode === 'register') {
+      // Full Name Validation
+      if (fullName.trim().length < 3) {
+        setError('Full Name must be at least 3 characters long.');
+        return;
+      }
+
+      // Password Strength Validation
+      if (password.length < 6) {
+        setError('Password is too weak. It must be at least 6 characters long.');
+        return;
+      }
+      
+      // Class Code Validation
+      if (!classCode.trim()) {
+        setError('Please enter your Class Code to register.');
+        return;
+      }
+    }
+
+    // --- 2. Submission & API Handling ---
+
     setIsSubmitting(true);
 
-    // Simulate network delay for better feel
-    await new Promise(resolve => setTimeout(resolve, 600));
+    try {
+      // Simulate network delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 600));
 
-    if (mode === 'login') {
-      const success = login(username, password);
-      if (!success) {
-        setError('Invalid credentials. Please check your username and password.');
-        setIsSubmitting(false);
+      let success = false;
+
+      if (mode === 'login') {
+        // We await here to handle async API calls correctly
+        success = await login(username, password);
+        
+        if (!success) {
+          throw new Error('Invalid credentials. Please check your username and password.');
+        }
+      } else {
+        // Pass classCode to register function
+        success = await register(username, fullName, password, classCode);
+        
+        if (!success) {
+          throw new Error('Registration failed. This username might already be taken.');
+        }
       }
-    } else {
-      const success = register(username, fullName, password);
-      if (!success) {
-        setError('This username is already taken. Please try another.');
-        setIsSubmitting(false);
-      }
+    } catch (err: any) {
+      // --- 3. API Error Handling ---
+      console.error("Authentication Error:", err);
+      
+      // If the API returns a specific error message, use it. Otherwise, fallback.
+      const errorMessage = err.message || 'An unexpected error occurred. Please try again later.';
+      setError(errorMessage);
+      setIsSubmitting(false);
     }
   };
 
@@ -39,8 +94,11 @@ export const Login: React.FC = () => {
     setMode(newMode);
     setError('');
     setPassword('');
-    // Keep username if switching to register, clear full name
-    if (newMode === 'login') setFullName('');
+    // Clear registration specific fields
+    if (newMode === 'login') {
+      setFullName('');
+      setClassCode('');
+    }
   };
 
   return (
@@ -53,7 +111,7 @@ export const Login: React.FC = () => {
           <div className="bg-gradient-to-br from-primary to-indigo-600 text-white p-4 rounded-2xl mb-6 shadow-lg shadow-primary/30 transform -rotate-3">
             <BookOpen size={40} strokeWidth={1.5} />
           </div>
-          <h1 className="text-3xl font-serif font-bold text-slate-900 tracking-tight text-center">BOCC 46 CommHub</h1>
+          <h1 className="text-3xl font-serif font-bold text-slate-900 tracking-tight text-center">Dictionary App</h1>
           <p className="text-slate-500 mt-2 text-center text-sm">
             {mode === 'login' ? 'Welcome back, student!' : 'Join the class community'}
           </p>
@@ -88,25 +146,48 @@ export const Login: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
           
           {mode === 'register' && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
-              <label htmlFor="fullName" className="block text-sm font-bold text-slate-700 ml-1">
-                Full Name
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  id="fullName"
-                  required
-                  value={fullName}
-                  onChange={(e) => { setFullName(e.target.value); setError(''); }}
-                  placeholder="e.g. Alex Smith"
-                  className="w-full px-5 py-3.5 pl-11 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary focus:outline-none transition-all placeholder:text-slate-400 text-base"
-                />
-                <UserCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <div className="animate-in fade-in slide-in-from-top-4 duration-300 space-y-4">
+              {/* Full Name Input */}
+              <div className="space-y-2">
+                <label htmlFor="fullName" className="block text-sm font-bold text-slate-700 ml-1">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="fullName"
+                    required
+                    value={fullName}
+                    onChange={(e) => { setFullName(e.target.value); setError(''); }}
+                    placeholder="e.g. Alex Smith"
+                    className="w-full px-5 py-3.5 pl-11 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary focus:outline-none transition-all placeholder:text-slate-400 text-base"
+                  />
+                  <UserCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                </div>
+              </div>
+
+              {/* Class Code Input */}
+              <div className="space-y-2">
+                <label htmlFor="classCode" className="block text-sm font-bold text-slate-700 ml-1">
+                  Class Code
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="classCode"
+                    required
+                    value={classCode}
+                    onChange={(e) => { setClassCode(e.target.value); setError(''); }}
+                    placeholder="e.g. CLASS-101"
+                    className="w-full px-5 py-3.5 pl-11 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary focus:outline-none transition-all placeholder:text-slate-400 text-base uppercase"
+                  />
+                  <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                </div>
               </div>
             </div>
           )}
 
+          {/* Username Input */}
           <div className="space-y-2">
             <label htmlFor="username" className="block text-sm font-bold text-slate-700 ml-1">
               Username
@@ -118,9 +199,9 @@ export const Login: React.FC = () => {
                 required
                 value={username}
                 onChange={(e) => { setUsername(e.target.value); setError(''); }}
-                placeholder={mode === 'login' ? "Enter username" : "e.g. alex_s"}
+                placeholder={mode === 'login' ? "Enter username" : "No spaces allowed (min 3 chars)"}
                 className={`w-full px-5 py-3.5 pl-11 rounded-xl bg-slate-50 border focus:bg-white focus:ring-4 focus:outline-none transition-all placeholder:text-slate-400 text-base ${
-                  error && error.includes('username')
+                  error && (error.includes('Username') || error.includes('taken'))
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10' 
                     : 'border-slate-200 focus:border-primary focus:ring-primary/10'
                 }`}
@@ -129,6 +210,7 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
+          {/* Password Input */}
           <div className="space-y-2">
             <label htmlFor="password" className="block text-sm font-bold text-slate-700 ml-1">
               Password
@@ -140,24 +222,20 @@ export const Login: React.FC = () => {
                 required={mode === 'register'} 
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                placeholder={mode === 'login' ? "Enter password" : "Create a password"}
+                placeholder={mode === 'login' ? "Enter password" : "Min 6 chars"}
                 className={`w-full px-5 py-3.5 pl-11 rounded-xl bg-slate-50 border focus:bg-white focus:ring-4 focus:outline-none transition-all placeholder:text-slate-400 text-base ${
-                  error && error.includes('password')
+                  error && (error.includes('Password') || error.includes('credentials'))
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10' 
                     : 'border-slate-200 focus:border-primary focus:ring-primary/10'
                 }`}
               />
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             </div>
-             {mode === 'login' && (
-              <p className="text-[10px] text-slate-400 ml-1">
-                * If you registered before password support, you can leave this blank.
-              </p>
-            )}
           </div>
 
+          {/* Error Message Display */}
           {error && (
-            <div className="flex items-start gap-2 text-red-500 text-xs font-medium ml-1 animate-in slide-in-from-top-1 bg-red-50 p-3 rounded-lg border border-red-100">
+            <div className="flex items-start gap-2 text-red-600 text-xs font-medium ml-1 animate-in slide-in-from-top-1 bg-red-50 p-3 rounded-lg border border-red-100">
               <AlertCircle size={14} className="mt-0.5 shrink-0" />
               {error}
             </div>
@@ -185,7 +263,7 @@ export const Login: React.FC = () => {
       </div>
       
       <p className="mt-8 text-slate-400 text-sm font-medium opacity-60">
-        Communication Development Course • BOCC 46
+        Develop a good vocabulary
       </p>
     </div>
   );

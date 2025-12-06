@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { EntryCard } from './EntryCard';
 import { EntryModal } from './EntryModal';
-import { Book, PlusCircle, BookOpen, MessageCircle, Quote, Bookmark, Folder, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Book, PlusCircle, BookOpen, MessageCircle, Quote, Bookmark, Folder, ChevronRight, ArrowLeft, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Entry, CollectionType } from '../types';
 
@@ -24,12 +24,50 @@ export const MyDictionary: React.FC = () => {
   const [viewIdiom, setViewIdiom] = useState(true);
   const [viewThought, setViewThought] = useState(true);
 
+  // Search State
+  const [searchTerm, setSearchTerm] = useState('');
+
   if (!user) return null;
+
+  // -- Helper: Filtering Logic --
+  const filterEntries = (entryList: Entry[]) => {
+    return entryList.filter(entry => {
+      // 1. Check Search Term
+      const matchesSearch = 
+        entry.vocabulary.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.idiom.phrase.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.thought.thought.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.studentName.toLowerCase().includes(searchTerm.toLowerCase());
+
+      if (!matchesSearch) return false;
+
+      // 2. Check View Toggles
+      // An entry should be visible if it has content for at least one active toggle.
+      // Logic:
+      // - Is there content for Vocab? AND is Vocab view enabled?
+      // - OR Is there content for Idiom? AND is Idiom view enabled?
+      // - OR Is there content for Thought? AND is Thought view enabled?
+      
+      const hasVocab = entry.vocabulary.word.trim().length > 0;
+      const hasIdiom = entry.idiom.phrase.trim().length > 0;
+      const hasThought = entry.thought.thought.trim().length > 0;
+
+      // If all toggles are off, show nothing (or show all as fallback, depending on UX choice. Here we hide).
+      if (!viewVocab && !viewIdiom && !viewThought) return false;
+
+      const matchesVocab = viewVocab && hasVocab;
+      const matchesIdiom = viewIdiom && hasIdiom;
+      const matchesThought = viewThought && hasThought;
+
+      return matchesVocab || matchesIdiom || matchesThought;
+    });
+  };
 
   // -- Data Logic --
   
   // 1. My Entries
-  const myEntries = entries.filter(entry => entry.userId === user.id);
+  const rawMyEntries = entries.filter(entry => entry.userId === user.id);
+  const filteredMyEntries = filterEntries(rawMyEntries);
 
   // 2. Collections
   const userCollections = collections.filter(c => c.userId === user.id);
@@ -42,7 +80,8 @@ export const MyDictionary: React.FC = () => {
     const savedInThis = savedEntries
         .filter(s => s.collectionId === collectionId)
         .map(s => s.entryId);
-    return entries.filter(e => savedInThis.includes(e.id));
+    const rawCollectionEntries = entries.filter(e => savedInThis.includes(e.id));
+    return filterEntries(rawCollectionEntries); // Apply filters/search to collection view too
   };
 
   // Effect: When opening a collection, auto-set view filters based on collection type
@@ -57,12 +96,13 @@ export const MyDictionary: React.FC = () => {
             } else if (collection.type === 'thought') {
                 setViewVocab(false); setViewIdiom(false); setViewThought(true);
             } else {
+                // General
                 setViewVocab(true); setViewIdiom(true); setViewThought(true);
             }
         }
     } else {
-        // Reset when leaving collection view (optional, or keep user pref)
-        setViewVocab(true); setViewIdiom(true); setViewThought(true);
+        // Reset when switching back to "My Entries" or similar if desired
+        // setViewVocab(true); setViewIdiom(true); setViewThought(true);
     }
   }, [selectedCollectionId, userCollections]);
 
@@ -91,7 +131,7 @@ export const MyDictionary: React.FC = () => {
         return (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                 <button 
-                    onClick={() => setSelectedCollectionId(null)}
+                    onClick={() => { setSelectedCollectionId(null); setSearchTerm(''); }}
                     className="flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 font-medium"
                 >
                     <ArrowLeft size={18} /> Back to Collections
@@ -104,7 +144,7 @@ export const MyDictionary: React.FC = () => {
                             <h3 className="text-3xl font-serif font-bold text-slate-900 flex items-center gap-3">
                                 {collection.name}
                             </h3>
-                            <p className="text-slate-500 mt-2">{collectionEntries.length} items saved</p>
+                            <p className="text-slate-500 mt-2">{collectionEntries.length} items visible</p>
                         </div>
                         <div className="bg-slate-100 p-4 rounded-2xl text-slate-400">
                              {getIconForType(collection.type || 'general')}
@@ -114,10 +154,15 @@ export const MyDictionary: React.FC = () => {
 
                 {collectionEntries.length === 0 ? (
                     <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                        <p className="text-slate-500">No entries saved in this collection yet.</p>
+                        <p className="text-slate-500">
+                          {searchTerm 
+                            ? "No entries match your search." 
+                            : "No entries saved in this collection."}
+                        </p>
                     </div>
                 ) : (
-                    <div className="columns-1 md:columns-2 xl:columns-3 gap-6 space-y-6">
+                    /* UPDATED: CSS Grid for straight rows */
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {collectionEntries.map(entry => (
                             <EntryCard 
                                 key={entry.id} 
@@ -162,13 +207,20 @@ export const MyDictionary: React.FC = () => {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredCollections.map(collection => {
-                            const count = savedEntries.filter(s => s.collectionId === collection.id).length;
-                            const previewEntries = getEntriesInCollection(collection.id).slice(0, 3);
+                            // Helper to get ALL entries in this collection (for preview count)
+                            // without applying search/view filters strictly for the preview bubbles
+                            const savedInThis = savedEntries
+                                .filter(s => s.collectionId === collection.id)
+                                .map(s => s.entryId);
+                            const allEntriesInCollection = entries.filter(e => savedInThis.includes(e.id));
+                            
+                            const count = allEntriesInCollection.length;
+                            const previewEntries = allEntriesInCollection.slice(0, 3);
                             
                             return (
                                 <button 
                                     key={collection.id}
-                                    onClick={() => setSelectedCollectionId(collection.id)}
+                                    onClick={() => { setSelectedCollectionId(collection.id); setSearchTerm(''); }}
                                     className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-indigo-100 transition-all text-left group flex flex-col h-full"
                                 >
                                     <div className="flex justify-between items-start mb-4">
@@ -213,7 +265,7 @@ export const MyDictionary: React.FC = () => {
     }
 
     // TAB: MY ENTRIES (Default)
-    if (myEntries.length === 0) {
+    if (rawMyEntries.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-32 bg-white rounded-3xl border border-dashed border-slate-200 text-center animate-in fade-in duration-300">
                 <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-6">
@@ -232,9 +284,18 @@ export const MyDictionary: React.FC = () => {
         );
     }
 
+    if (filteredMyEntries.length === 0) {
+        return (
+            <div className="text-center py-24 text-slate-400">
+                <p>No entries match your search or filters.</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="columns-1 md:columns-2 xl:columns-3 gap-6 space-y-6 animate-in fade-in duration-300">
-            {myEntries.map(entry => (
+        /* UPDATED: CSS Grid for straight rows */
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-in fade-in duration-300">
+            {filteredMyEntries.map(entry => (
                 <EntryCard 
                     key={entry.id} 
                     entry={entry} 
@@ -249,10 +310,10 @@ export const MyDictionary: React.FC = () => {
   };
 
   return (
-    <div className="py-8 px-4 sm:px-8">
+    <div className="py-6 px-4 sm:px-8 max-w-[1600px] mx-auto">
       {/* Header */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 gap-6">
-        <div>
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end mb-8 gap-6">
+        <div className="w-full xl:w-auto">
            <div className="flex items-center gap-3 mb-2">
              <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
                 <Book size={24} />
@@ -262,37 +323,57 @@ export const MyDictionary: React.FC = () => {
            <p className="text-slate-500">Manage your posts and saved collections.</p>
         </div>
 
-        {/* Filters (only show for entry lists, not collection lists) */}
-        {(!selectedCollectionId && activeTab === 'my-entries') && (
-            <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                <button
-                    onClick={() => setViewVocab(!viewVocab)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all ${viewVocab ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                    <BookOpen size={14} /> Word
-                </button>
-                <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                <button
-                    onClick={() => setViewIdiom(!viewIdiom)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all ${viewIdiom ? 'bg-emerald-100 text-emerald-700' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                    <MessageCircle size={14} /> Idiom
-                </button>
-                <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                <button
-                    onClick={() => setViewThought(!viewThought)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all ${viewThought ? 'bg-amber-100 text-amber-700' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                    <Quote size={14} /> Thought
-                </button>
-            </div>
-        )}
+        {/* Toolbar: Search + View Filters */}
+        <div className="flex flex-col-reverse md:flex-row gap-4 w-full xl:w-auto">
+            
+            {/* View Filters (Only show when NOT looking at collections list) */}
+            {activeTab !== 'collections' || selectedCollectionId ? (
+                <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto">
+                    <button
+                        onClick={() => setViewVocab(!viewVocab)}
+                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${viewVocab ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                        <BookOpen size={14} /> Word
+                    </button>
+                    <div className="w-px h-4 bg-slate-200 mx-1 shrink-0"></div>
+                    <button
+                        onClick={() => setViewIdiom(!viewIdiom)}
+                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${viewIdiom ? 'bg-emerald-100 text-emerald-700' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                        <MessageCircle size={14} /> Idiom
+                    </button>
+                    <div className="w-px h-4 bg-slate-200 mx-1 shrink-0"></div>
+                    <button
+                        onClick={() => setViewThought(!viewThought)}
+                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${viewThought ? 'bg-amber-100 text-amber-700' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                        <Quote size={14} /> Thought
+                    </button>
+                </div>
+            ) : null}
+
+            {/* Search Box (Only show when NOT looking at collections list) */}
+            {activeTab !== 'collections' || selectedCollectionId ? (
+                <div className="relative flex-1 md:w-64 group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search size={18} className="text-slate-400 group-focus-within:text-indigo-500 transition-colors"/>
+                    </div>
+                    <input 
+                        type="text" 
+                        placeholder="Search..." 
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-700 shadow-sm transition-all text-sm"
+                    />
+                </div>
+            ) : null}
+        </div>
       </div>
 
       {/* Tab Navigation */}
       <div className="flex gap-6 border-b border-slate-200 mb-8">
         <button 
-            onClick={() => { setActiveTab('my-entries'); setSelectedCollectionId(null); }}
+            onClick={() => { setActiveTab('my-entries'); setSelectedCollectionId(null); setSearchTerm(''); }}
             className={`pb-4 text-sm font-bold transition-all relative ${activeTab === 'my-entries' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`}
         >
             <span className="flex items-center gap-2">
@@ -301,7 +382,7 @@ export const MyDictionary: React.FC = () => {
             {activeTab === 'my-entries' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-t-full"></div>}
         </button>
         <button 
-            onClick={() => { setActiveTab('collections'); setSelectedCollectionId(null); }}
+            onClick={() => { setActiveTab('collections'); setSelectedCollectionId(null); setSearchTerm(''); }}
             className={`pb-4 text-sm font-bold transition-all relative ${activeTab === 'collections' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`}
         >
             <span className="flex items-center gap-2">
