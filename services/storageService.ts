@@ -59,6 +59,7 @@ export const registerUser = async (username: string, name: string, password?: st
         return res.data;
     } catch (error) {
         console.error("Register failed", error);
+        throw Error(error.response?.data?.message || "something went wrong");
         return null;
     }
 };
