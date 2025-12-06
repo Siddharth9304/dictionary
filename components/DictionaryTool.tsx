@@ -55,7 +55,7 @@ export const DictionaryTool: React.FC = () => {
                 disabled={!query.trim() || isLoading}
                 className="absolute right-2 bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
+                {/* {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />} */}
             </button>
         </form>
       </div>
