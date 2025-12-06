@@ -158,7 +158,12 @@ export const Login: React.FC = () => {
                     id="classCode"
                     required
                     value={classCode}
-                    onChange={(e) => { setClassCode(e.target.value); setError(''); }}
+                    onChange={(e) => { 
+                    // Force lowercase and remove any spaces immediately
+                    const sanitizedValue = e.target.value.toLowerCase().replace(/\s/g, '');
+                      setClassCode(sanitizedValue); 
+                      setError(''); 
+                    }}
                     placeholder="e.g. CLASS-101"
                     className="w-full px-5 py-3.5 pl-11 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary focus:outline-none transition-all placeholder:text-slate-400 text-base uppercase"
                   />
