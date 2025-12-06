@@ -94,7 +94,7 @@ export const Login: React.FC = () => {
           <div className="bg-gradient-to-br from-primary to-indigo-600 text-white p-4 rounded-2xl mb-6 shadow-lg shadow-primary/30 transform -rotate-3">
             <BookOpen size={40} strokeWidth={1.5} />
           </div>
-          <h1 className="text-3xl font-serif font-bold text-slate-900 tracking-tight text-center">Dictionary App</h1>
+          <h1 className="text-3xl font-serif font-bold text-slate-900 tracking-tight text-center">Vocab App</h1>
           <p className="text-slate-500 mt-2 text-center text-sm">
             {mode === 'login' ? 'Welcome back, student!' : 'Join the class community'}
           </p>
